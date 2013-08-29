@@ -37,6 +37,7 @@ def qqlogin(request):
        return HttpResponse(result, content_type = 'application/json')
 
     #get the userinfo according to the access_token and openid
+    #TODO:this appid should be written in the conf file
     appid = "100510779"
     payload = {'access_token': access_token, 'oauth_consumer_key': appid, 'openid': openid}
     r = requests.get('https://graph.qq.com/user/get_user_info?', params = payload)
@@ -58,6 +59,7 @@ def sinalogin(request):
     """a method for sina login"""
 
     #use the access_token to get uid from sina server    
+    #TODO:this appkey should be written in the conf file
     appkey = "2600055104"
     access_token = request.POST['access_token']
     payload = {'source': appkey, 'access_token': access_token}
