@@ -5,8 +5,6 @@ import requests
 import json
 import sys
 
-#TODO:error_code!!!!!!!!!!!!!!!!!!!
-
 def __resultToJson(errorCode, errorMsg, detail):
     """a method for dump result into str for httpresponse"""
 
@@ -187,7 +185,7 @@ def createChapter(request):
 
 @csrf_exempt
 def getStory(request, id):
-    """a method for returning the startChapter of a story according to the story id"""
+    """a method for returning details of a story according to the story id"""
 
     try:
         story = Story.objects.get(stid = int(id))
@@ -196,20 +194,38 @@ def getStory(request, id):
         return HttpResponse(result, content_type = 'application/json')
     detail = {
         'title': story.title,
+        'keysMask': story.keysMask,
         'summary': story.summary,
         'hot': story.hot,
         'support': story.support,
         'unsupport': story.unsupport,
         'author': story.author_id,
-        'startChap': story.startChap_id
+        'startChap': story.startChap_id,
+        'modeMask': story.modeMask
         }
     result = __resultToJson(0, '', detail)
     return HttpResponse(result, content_type = 'application/json')
 
 @csrf_exempt
 def getChapter(request, id):
-    #TODO: NEEDED_TO_BE_IMPLEMENTED
-    return HttpResponse("getChapter method, param -> id: %s" % id)
+    """a method for returning details of a chapter according to the chapter id"""
+
+    try:
+        chapter = Chapter.objects.get(cpid = int(id))
+    except:
+        result = __resultToJson(1, repr(sys.exc_info()[0]), {})
+        return HttpResponse(result, content_type = 'application/json')
+    detail = {
+        'desc': chapter.desc,
+        'parentId': chapter.parentId,
+        'children': chapter.children,
+        'coauthor': chapter.coauthor_id,
+        'support': chapter.support,
+        'unsupport': chapter.unsupport,
+        'modeMask': chapter.modeMask
+        }
+    result = __resultToJson(0, '', detail)
+    return HttpResponse(result, content_type = 'application/json')
 
 @csrf_exempt
 def getNextChapter(request, id):
