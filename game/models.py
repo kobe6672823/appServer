@@ -2,6 +2,7 @@
 # -*- coding: utf-8 -*-
 from django.db import models
 from .fields import BigAutoField
+import time
 
 class User(models.Model):
     uid = models.CharField(primary_key = True, max_length = 50, help_text = '识别用户唯一id')
@@ -14,11 +15,14 @@ class Chapter(models.Model):
     cpid = BigAutoField(primary_key=True, null = False, help_text = '章节ID')
     desc = models.TextField(help_text = '章节内容')
     parentId = models.PositiveIntegerField(default = 0, help_text = '父亲节点的ID')
+    #parentId = models.ForeignKey('self', default = 0, blank=True, null=True, help_text = '父亲节点的ID')
     children = models.TextField(blank = True, help_text = '用逗号分割开的cpid序列')
     coauthor = models.ForeignKey('User', related_name = 'chapter_author', help_text = '章节作者')
     support = models.PositiveIntegerField(default = 0, help_text = '赞的人数')
     unsupport = models.PositiveIntegerField(default = 0, help_text = '踩的人数')
     modeMask = models.IntegerField(help_text = '权限类型的|值.(是否允许其他人进行编辑或续写)')
+    createTime = models.BigIntegerField(default = int(time.time()), null = False, help_text = '章节创建时间')
+    scanNum = models.PositiveIntegerField(default = 0, help_text = '浏览数')
 
     def __unicode__(self):
         return self.desc
@@ -35,6 +39,11 @@ class Story(models.Model):
     modeMask = models.IntegerField(help_text = '权限类型的|值(是否允许其他人进行编辑或续写)')
     chapNum = models.PositiveIntegerField(default = 1, help_text = '故事章节数')
     startChap = models.OneToOneField('Chapter')
+    timeStamp = models.BigIntegerField(default = int(time.time()), null = False, help_text = '故事最后更新时间')
+    createTime = models.BigIntegerField(default = int(time.time()), null = False, help_text = '故事创建时间')
+    shareNum = models.PositiveIntegerField(default = 0, help_text = '分享数')
+    collectNum = models.PositiveIntegerField(default = 0, help_text = '收藏数')
+    scanNum = models.PositiveIntegerField(default = 0, help_text = '浏览数')
 
     def __unicode__(self):
         return self.title
