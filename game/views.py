@@ -4,6 +4,7 @@ from game.models import User, Chapter, Story
 import requests
 import json
 import sys
+import time
 
 def __resultToJson(errorCode, errorMsg, detail):
     """a method for dump result into str for httpresponse"""
@@ -112,10 +113,11 @@ def createStory(request):
     startChap.author = author
     startChap.coauthor = author
     startChap.modeMask = request.POST['startChapModeMask']
+    startChap.createTime = int(time.time())
     try:
         startChap.save()
     except:
-        result = __resultToJson(1, repr(sys.exc_info()[0]), {})
+        result = __resultToJson(2, repr(sys.exc_info()[0]), {})
         return HttpResponse(result, content_type = 'application/json')
     
     #create new story
@@ -126,10 +128,12 @@ def createStory(request):
     newStory.author = author
     newStory.modeMask = int(request.POST['modeMask'])
     newStory.startChap = startChap
+    newStory.createTime = int(time.time())
+    newStory.timeStamp = int(time.time())
     try:
         newStory.save()
     except:
-        result = __resultToJson(1, repr(sys.exc_info()[0]), {})
+        result = __resultToJson(3, repr(sys.exc_info()[0]), {})
         return HttpResponse(result, content_type = 'application/json')
     result = __resultToJson(0, '', {'stid': newStory.stid})
     return HttpResponse(result, content_type = 'application/json')
@@ -156,6 +160,7 @@ def createChapter(request):
     newChapter.children = ''    #blank, no children now
     newChapter.coauthor = coauthor
     newChapter.modeMask = request.POST['modeMask']
+    newChapter.createTime = int(time.time())
 
     try:
         newChapter.save()
@@ -201,7 +206,12 @@ def getStory(request, id):
         'unsupport': story.unsupport,
         'author': story.author_id,
         'startChap': story.startChap_id,
-        'modeMask': story.modeMask
+        'modeMask': story.modeMask,
+        'createTime': story.createTime,
+        'timeStamp': story.timeStamp,
+        'shareNum': story.shareNum,
+        'collectNum': story.collectNum,
+        'scanNum': story.scanNum
         }
     result = __resultToJson(0, '', detail)
     return HttpResponse(result, content_type = 'application/json')
@@ -222,7 +232,9 @@ def getChapter(request, id):
         'coauthor': chapter.coauthor_id,
         'support': chapter.support,
         'unsupport': chapter.unsupport,
-        'modeMask': chapter.modeMask
+        'modeMask': chapter.modeMask,
+        'createTime': chapter.createTime,
+        'scanNum': chapter.scanNum
         }
     result = __resultToJson(0, '', detail)
     return HttpResponse(result, content_type = 'application/json')
