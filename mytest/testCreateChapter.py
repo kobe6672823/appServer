@@ -19,6 +19,7 @@ payload = {
     'parentId': 1,
 	'modeMask': 1,
 	'desc': 'test create new chapter',
+    'storyId': 1
           }
 r = requests.post('http://127.0.0.1:8000/chapter/create', cookies = cookies, data = payload)
 print r.text

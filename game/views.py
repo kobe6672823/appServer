@@ -135,6 +135,10 @@ def createStory(request):
     except:
         result = __resultToJson(3, repr(sys.exc_info()[0]), {})
         return HttpResponse(result, content_type = 'application/json')
+
+    #save the storyid for the startChapter
+    startChap.storyId = newStory.stid
+    startChap.save()
     result = __resultToJson(0, '', {'stid': newStory.stid})
     return HttpResponse(result, content_type = 'application/json')
 
@@ -161,6 +165,7 @@ def createChapter(request):
     newChapter.coauthor = coauthor
     newChapter.modeMask = request.POST['modeMask']
     newChapter.createTime = int(time.time())
+    newChapter.storyId = request.POST['storyId']
 
     try:
         newChapter.save()
@@ -168,6 +173,19 @@ def createChapter(request):
         result = __resultToJson(1, repr(sys.exc_info()[0]), {})
         return HttpResponse(result, content_type = 'application/json')
     
+    #change the belong story's timestamp
+    try:
+        story = Story.objects.get(stid = int(newChapter.storyId))
+    except:
+        result = __resultToJson(1, repr(sys.exc_info()[0]), {})
+        return HttpResponse(result, content_type = 'application/json')
+    story.timeStamp = int(time.time())
+    try:
+        story.save()
+    except:
+        result = __resultToJson(3, repr(sys.exc_info()[0]), {})
+        return HttpResponse(result, content_type = 'application/json')
+
     #get the parent chapter
     try:
         parentChapter = Chapter.objects.get(cpid = request.POST['parentId'])
@@ -234,7 +252,8 @@ def getChapter(request, id):
         'unsupport': chapter.unsupport,
         'modeMask': chapter.modeMask,
         'createTime': chapter.createTime,
-        'scanNum': chapter.scanNum
+        'scanNum': chapter.scanNum,
+        'storyId': chapter.storyId
         }
     result = __resultToJson(0, '', detail)
     return HttpResponse(result, content_type = 'application/json')

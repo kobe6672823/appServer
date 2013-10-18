@@ -23,6 +23,7 @@ class Chapter(models.Model):
     modeMask = models.IntegerField(help_text = '权限类型的|值.(是否允许其他人进行编辑或续写)')
     createTime = models.BigIntegerField(default = int(time.time()), null = False, help_text = '章节创建时间')
     scanNum = models.PositiveIntegerField(default = 0, help_text = '浏览数')
+    storyId = models.BigIntegerField(default = 0, blank = True, null = True, help_text = '所属故事id')
 
     def __unicode__(self):
         return self.desc
@@ -44,8 +45,28 @@ class Story(models.Model):
     shareNum = models.PositiveIntegerField(default = 0, help_text = '分享数')
     collectNum = models.PositiveIntegerField(default = 0, help_text = '收藏数')
     scanNum = models.PositiveIntegerField(default = 0, help_text = '浏览数')
-
+    
     def __unicode__(self):
         return self.title
+
+class CoauthorsStatistics(models.Model):
+    """这个model主要用来计算每个故事的参与人数（榜单接口的最热，历史最热需要知道这个数据）"""
+    story = models.OneToOneField('Story')
+    allCoauthorsSet = models.TextField(blank = True, help_text = '用逗号分割开的authorid序列')
+    allCoauthorsNum = models.BigIntegerField(default = 0, help_text = 'allCoauthorsSet的大小，历史所有参与人数的总数，方便数据排序')
+    
+    #以下7个set，相当于一个滑动窗口，因为热门榜单只需要知道最近这一周的coauthor情况
+    sixDBefore = models.TextField(blank = True, help_text = '用逗号分割开的authorid序列')
+    fiveDBefore = models.TextField(blank = True, help_text = '用逗号分割开的authorid序列')
+    fourDBefore = models.TextField(blank = True, help_text = '用逗号分割开的authorid序列')
+    threeDBefore = models.TextField(blank = True, help_text = '用逗号分割开的authorid序列')
+    twoDBefore = models.TextField(blank = True, help_text = '用逗号分割开的authorid序列')
+    oneDBefore = models.TextField(blank = True, help_text = '用逗号分割开的authorid序列')
+    today = models.TextField(blank = True, help_text = '用逗号分割开的authorid序列')
+    
+    #相当于上述7个set的汇总
+    weekCoauthorsSet = models.TextField(blank = True, help_text = '用逗号分割开的authorid序列')
+    weekCoauthorsNum = models.BigIntegerField(default= 0, help_text = 'weekCoauthorsSet的大小，一周参与人数的总数，方便数据排序')
+    
 
 
