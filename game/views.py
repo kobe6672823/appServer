@@ -1,6 +1,6 @@
 from django.http import HttpResponse
 from django.views.decorators.csrf import csrf_exempt
-from game.models import User, Chapter, Story
+from game.models import User, Chapter, Story, CoauthorsStatistics
 import requests
 import json
 import sys
@@ -135,6 +135,26 @@ def createStory(request):
     except:
         result = __resultToJson(3, repr(sys.exc_info()[0]), {})
         return HttpResponse(result, content_type = 'application/json')
+
+    #save the storyid for the startChapter
+    startChap.storyId = newStory.stid
+    startChap.save()
+
+    #create the corresponding coauthorset
+    coauthorStat = CoauthorsStatistics()
+    coauthorStat.story = newStory
+    coauthorStat.allCoauthorsSet = authorId
+    coauthorStat.allCoauthorsNum = 1
+
+    coauthorStat.today = authorId
+    coauthorStat.weekCoauthorsSet = authorId
+    coauthorStat.weekCoauthorsNum = 1
+    try:
+        coauthorStat.save()
+    except:
+        result = __resultToJson(3, repr(sys.exc_info()[0]), {})
+        return HttpResponse(result, content_type = 'application/json')
+
     result = __resultToJson(0, '', {'stid': newStory.stid})
     return HttpResponse(result, content_type = 'application/json')
 
@@ -150,7 +170,7 @@ def createChapter(request):
     try:
         coauthor = User.objects.get(uid = request.session['mid'])
     except:
-        result = __resultToJson(1, repr(sys.exc_info()[0]), {})
+        result = __resultToJson(9, repr(sys.exc_info()[0]), {})
         return HttpResponse(result, content_type = 'application/json')
 
     #create a new chapter
@@ -161,13 +181,61 @@ def createChapter(request):
     newChapter.coauthor = coauthor
     newChapter.modeMask = request.POST['modeMask']
     newChapter.createTime = int(time.time())
+    newChapter.storyId = request.POST['storyId']
 
     try:
         newChapter.save()
     except:
-        result = __resultToJson(1, repr(sys.exc_info()[0]), {})
+        result = __resultToJson(2, repr(sys.exc_info()[0]), {})
         return HttpResponse(result, content_type = 'application/json')
     
+    #change the belonging story's timestamp
+    try:
+        story = Story.objects.get(stid = int(newChapter.storyId))
+    except:
+        result = __resultToJson(3, repr(sys.exc_info()[0]), {})
+        return HttpResponse(result, content_type = 'application/json')
+    story.timeStamp = int(time.time())
+    try:
+        story.save()
+    except:
+        result = __resultToJson(4, repr(sys.exc_info()[0]), {})
+        return HttpResponse(result, content_type = 'application/json')
+    
+    #update the coauthorsStatistics
+    try:
+        coauthorStat = CoauthorsStatistics.objects.get(story = story)
+    except:
+        result = __resultToJson(5, repr(sys.exc_info()[0]), {})
+        return HttpResponse(result, content_type = 'application/json')
+    allCoauthorsSet = set(coauthorStat.allCoauthorsSet.split(','))
+    weekCoauthorsSet = set(coauthorStat.weekCoauthorsSet.split(','))
+    today = set(coauthorStat.today.split(','))
+
+    if (coauthor.uid not in allCoauthorsSet):
+        allCoauthorsSet.add(coauthor.uid)
+        weekCoauthorsSet.add(coauthor.uid)
+        today.add(coauthor.uid)
+        coauthorStat.allCoauthorsNum += 1
+        coauthorStat.weekCoauthorsNum += 1
+    elif (coauthor.uid not in weekCoauthorsSet):
+        weekCoauthorsSet.add(coauthor.uid)
+        today.add(coauthor.uid)
+        coauthorStat.weekCoauthorsNum += 1
+    elif (coauthor.uid not in today):
+        today.add(coauthor.uid)
+
+    coauthorStat.allCoauthorsSet = ','.join(uid for uid in allCoauthorsSet)
+    coauthorStat.weekCoauthorsSet = ','.join(uid for uid in weekCoauthorsSet)
+    coauthorStat.today = ','.join(uid for uid in today)
+
+    try:
+        coauthorStat.save()
+    except:
+        result = __resultToJson(6, repr(sys.exc_info()[0]), {})
+        return HttpResponse(result, content_type = 'application/json')
+
+
     #get the parent chapter
     try:
         parentChapter = Chapter.objects.get(cpid = request.POST['parentId'])
@@ -234,7 +302,8 @@ def getChapter(request, id):
         'unsupport': chapter.unsupport,
         'modeMask': chapter.modeMask,
         'createTime': chapter.createTime,
-        'scanNum': chapter.scanNum
+        'scanNum': chapter.scanNum,
+        'storyId': chapter.storyId
         }
     result = __resultToJson(0, '', detail)
     return HttpResponse(result, content_type = 'application/json')

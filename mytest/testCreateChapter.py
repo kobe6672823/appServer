@@ -16,9 +16,10 @@ r = requests.post('http://127.0.0.1:8000/qqlogin/', data = payload)
 sessionid = r.cookies['sessionid']
 cookies = {'sessionid': sessionid}
 payload = {
-    'parentId': 1,
+    'parentId': 19,
 	'modeMask': 1,
 	'desc': 'test create new chapter',
+    'storyId': 3
           }
 r = requests.post('http://127.0.0.1:8000/chapter/create', cookies = cookies, data = payload)
 print r.text
