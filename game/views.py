@@ -333,10 +333,53 @@ def getOffspring(request, id):
     #TODO: NEEDED_TO_BE_IMPLEMENTED
     return HttpResponse("getOffspring method, param -> id: %s" % id)
 
-#@csrf_exempt
-#def getStoryList(request, type, start, count, timeStamp, startStoryId)
-#    """a method for returning the hottest/newest/quality story list"""
+@csrf_exempt
+def getStoryList(request, listType, start, count, timeStamp, startStoryId):
+    """a method for returning the hottest/newest/quality story list"""
 
-#    if (type == 1):  #newest
-#        if (startStoryId == -1):
-#            storys = Story.object.get(stid <= )
+    listType = int (listType)
+    start = int(start) - 1
+    count = int(count)
+    timeStamp = int(timeStamp)
+    startStoryId = int(startStoryId)
+    if (listType == 1):  #newest
+        if (startStoryId == -1):
+            stories = Story.objects.order_by('-createTime')[start : start+count]
+        else:
+            stories = Story.objects.filter(stid__lte = startStoryId).order_by('-createTime')[:count]
+    elif (listType == 2):   #hottest
+        coauthorStats = CoauthorsStatistics.objects.order_by('-weekCoauthorsNum')[start : start+count]
+        storyIds = [obj.story_id for obj in coauthorStats]
+        stories = [Story.objects.get(stid = storyId) for storyId in storyIds]
+    elif (listType == 3):   #quality story
+        coauthorStats = CoauthorsStatistics.objects.order_by('-allCoauthorsNum')[start : start+count]
+        storyIds = [obj.story_id for obj in coauthorStats]
+        stories = [Story.objects.get(stid = storyId) for storyId in storyIds]
+
+    detail = {'stories' : []}
+    for story in stories:
+        if story.timeStamp >= timeStamp:
+            curDetail = {
+                        'storyid': story.stid,
+                        'modify': 1,
+                        'title': story.title,
+                        'keysMask': story.keysMask,
+                        'summary': story.summary,
+                        'hot': story.hot,
+                        'support': story.support,
+                        'unsupport': story.unsupport,
+                        'author': story.author_id,
+                        'startChap': story.startChap_id,
+                        'modeMask': story.modeMask,
+                        'createTime': story.createTime,
+                        'timeStamp': story.timeStamp,
+                        'shareNum': story.shareNum,
+                        'collectNum': story.collectNum,
+                        'scanNum': story.scanNum
+                        }
+        else:
+            curDetail = {'storyid': story.stid, 'modify': 0}
+        detail['stories'].append(curDetail)
+
+    result = __resultToJson(0, '', detail)
+    return HttpResponse(result, content_type = 'application/json')
