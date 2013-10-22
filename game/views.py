@@ -101,10 +101,10 @@ def createStory(request):
         return HttpResponse(result, content_type = 'application/json')
 
     authorId = request.session['mid']
-    try:
+    if User.objects.filter(uid = authorId).exists():
         author = User.objects.get(uid = authorId)
-    except:
-        result = __resultToJson(1, repr(sys.exc_info()[0]), {})
+    else:
+        result = __resultToJson(1, "uid: %s does not exist" % authorId, {})
         return HttpResponse(result, content_type = 'application/json')
 
     #create start chapter
@@ -167,21 +167,21 @@ def createChapter(request):
         result = __resultToJson(1, 'redirect to login page!', {})
         return HttpResponse(result, content_type = 'application/json')
 
-    try:
+    if User.objects.filter(uid = request.session['mid']).exists():
         coauthor = User.objects.get(uid = request.session['mid'])
-    except:
-        result = __resultToJson(9, repr(sys.exc_info()[0]), {})
+    else:
+        result = __resultToJson(9, "uid: %s does not exist" % request.session['mid'], {})
         return HttpResponse(result, content_type = 'application/json')
 
     #create a new chapter
     newChapter = Chapter()
     newChapter.desc = request.POST['desc']
-    newChapter.parentId = request.POST['parentId']
+    newChapter.parentId = int(request.POST['parentId'])
     newChapter.children = ''    #blank, no children now
     newChapter.coauthor = coauthor
-    newChapter.modeMask = request.POST['modeMask']
+    newChapter.modeMask = int(request.POST['modeMask'])
     newChapter.createTime = int(time.time())
-    newChapter.storyId = request.POST['storyId']
+    newChapter.storyId = int(request.POST['storyId'])
 
     try:
         newChapter.save()
@@ -190,10 +190,10 @@ def createChapter(request):
         return HttpResponse(result, content_type = 'application/json')
     
     #change the belonging story's timestamp
-    try:
-        story = Story.objects.get(stid = int(newChapter.storyId))
-    except:
-        result = __resultToJson(3, repr(sys.exc_info()[0]), {})
+    if Story.objects.filter(stid = newChapter.storyId).exists():
+        story = Story.objects.get(stid = newChapter.storyId)
+    else:
+        result = __resultToJson(3, "The new chapter's father story: #%s does not exist" % newChapter.storyId, {})
         return HttpResponse(result, content_type = 'application/json')
     story.timeStamp = int(time.time())
     try:
@@ -203,10 +203,10 @@ def createChapter(request):
         return HttpResponse(result, content_type = 'application/json')
     
     #update the coauthorsStatistics
-    try:
+    if CoauthorsStatistics.objects.filter(story = story).exists():
         coauthorStat = CoauthorsStatistics.objects.get(story = story)
-    except:
-        result = __resultToJson(5, repr(sys.exc_info()[0]), {})
+    else:
+        result = __resultToJson(5, "the coauthorStatistics of story :#%d does not exit in db" % story.stid, {})
         return HttpResponse(result, content_type = 'application/json')
     allCoauthorsSet = set(coauthorStat.allCoauthorsSet.split(','))
     weekCoauthorsSet = set(coauthorStat.weekCoauthorsSet.split(','))
@@ -237,10 +237,10 @@ def createChapter(request):
 
 
     #get the parent chapter
-    try:
+    if Chapter.objects.filter(cpid = int(request.POST['parentId'])).exists():
         parentChapter = Chapter.objects.get(cpid = request.POST['parentId'])
-    except:
-        result = __resultToJson(1, repr(sys.exc_info()[0]), {})
+    else:
+        result = __resultToJson(1, "the chapter's parent chapter: #%s does not exist" % request.POST['parentId'], {})
         return HttpResponse(result, content_type = 'application/json')
 
     #add new chapter's id into parentChapter's children field
@@ -260,10 +260,10 @@ def createChapter(request):
 def getStory(request, id):
     """a method for returning details of a story according to the story id"""
 
-    try:
+    if Story.objects.filter(stid = int(id)).exists():
         story = Story.objects.get(stid = int(id))
-    except:
-        result = __resultToJson(1, repr(sys.exc_info()[0]), {})
+    else:
+        result = __resultToJson(1, "story: #%s does not exist" % id, {})
         return HttpResponse(result, content_type = 'application/json')
     detail = {
         'title': story.title,
@@ -288,10 +288,10 @@ def getStory(request, id):
 def getChapter(request, id):
     """a method for returning details of a chapter according to the chapter id"""
 
-    try:
+    if Chapter.objects.filter(cpid = int(id)).exists():
         chapter = Chapter.objects.get(cpid = int(id))
-    except:
-        result = __resultToJson(1, repr(sys.exc_info()[0]), {})
+    else:
+        result = __resultToJson(1, "chapter: #%s does not exist" % id, {})
         return HttpResponse(result, content_type = 'application/json')
     detail = {
         'desc': chapter.desc,
@@ -332,3 +332,54 @@ def getChildrenChapters(request, id):
 def getOffspring(request, id):
     #TODO: NEEDED_TO_BE_IMPLEMENTED
     return HttpResponse("getOffspring method, param -> id: %s" % id)
+
+@csrf_exempt
+def getStoryList(request, listType, start, count, timeStamp, startStoryId):
+    """a method for returning the hottest/newest/quality story list"""
+
+    listType = int (listType)
+    start = int(start) - 1
+    count = int(count)
+    timeStamp = int(timeStamp)
+    startStoryId = int(startStoryId)
+    if (listType == 1):  #newest
+        if (startStoryId == -1):
+            stories = Story.objects.order_by('-createTime')[start : start+count]
+        else:
+            stories = Story.objects.filter(stid__lte = startStoryId).order_by('-createTime')[:count]
+    elif (listType == 2):   #hottest
+        coauthorStats = CoauthorsStatistics.objects.order_by('-weekCoauthorsNum')[start : start+count]
+        storyIds = [obj.story_id for obj in coauthorStats]
+        stories = [Story.objects.get(stid = storyId) for storyId in storyIds]
+    elif (listType == 3):   #quality story
+        coauthorStats = CoauthorsStatistics.objects.order_by('-allCoauthorsNum')[start : start+count]
+        storyIds = [obj.story_id for obj in coauthorStats]
+        stories = [Story.objects.get(stid = storyId) for storyId in storyIds]
+
+    detail = {'stories' : []}
+    for story in stories:
+        if story.timeStamp >= timeStamp:
+            curDetail = {
+                        'storyid': story.stid,
+                        'modify': 1,
+                        'title': story.title,
+                        'keysMask': story.keysMask,
+                        'summary': story.summary,
+                        'hot': story.hot,
+                        'support': story.support,
+                        'unsupport': story.unsupport,
+                        'author': story.author_id,
+                        'startChap': story.startChap_id,
+                        'modeMask': story.modeMask,
+                        'createTime': story.createTime,
+                        'timeStamp': story.timeStamp,
+                        'shareNum': story.shareNum,
+                        'collectNum': story.collectNum,
+                        'scanNum': story.scanNum
+                        }
+        else:
+            curDetail = {'storyid': story.stid, 'modify': 0}
+        detail['stories'].append(curDetail)
+
+    result = __resultToJson(0, '', detail)
+    return HttpResponse(result, content_type = 'application/json')
