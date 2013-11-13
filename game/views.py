@@ -26,7 +26,7 @@ def qqlogin(request):
     r = requests.get("https://graph.qq.com/oauth2.0/me", params = payload)
     callback = r.text
     if (callback.find("openid") == -1):
-        result = __resultToJson(1, 'fail to get openid', {})
+        result = __resultToJson(1, 'fail to get openid(useless accesstoken)', {})
         return HttpResponse(result, content_type = 'application/json')
 
     try:

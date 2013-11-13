@@ -9,8 +9,8 @@ r = requests.post('http://127.0.0.1:8000/chapter/create')
 print repr(r.json)
 
 #login
-payload = {"access_token": "CA1CCAE89E13EC710DA88378A40BE5CF"}
-r = requests.post('http://127.0.0.1:8000/qqlogin/', data = payload)
+payload = {'access_token': "2.008V8iPCeGZxpCb6cb2cbd90rNR1HD"}
+r = requests.post('http://127.0.0.1:8000/sinalogin/', data = payload)
 
 #after login
 sessionid = r.cookies['sessionid']
