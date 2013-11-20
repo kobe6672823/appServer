@@ -12,6 +12,9 @@ def __resultToJson(errorCode, errorMsg, detail):
     result = {}
     result['code'] = errorCode
     result['msg'] = errorMsg
+    for k in detail.keys():
+        if not (type(detail[k]) == type('str')):
+            detail[k] = str(detail[k])
     result['detail'] = detail
     return json.dumps(result)
     return HttpResponse(json.dumps(result), content_type="application/json")
@@ -26,13 +29,13 @@ def qqlogin(request):
     r = requests.get("https://graph.qq.com/oauth2.0/me", params = payload)
     callback = r.text
     if (callback.find("openid") == -1):
-        result = __resultToJson(1, 'fail to get openid(useless accesstoken)', {})
+        result = __resultToJson('1', 'fail to get openid(useless accesstoken)', {})
         return HttpResponse(result, content_type = 'application/json')
 
     try:
         openid = str(callback.split("{")[1].split("}")[0].split(",")[1].split(":")[1].split("\"")[1])
     except:
-       result = __resultToJson(1, 'fail to get openid', {})
+       result = __resultToJson('1', 'fail to get openid', {})
        return HttpResponse(result, content_type = 'application/json')
 
     #get the userinfo according to the access_token and openid
@@ -47,10 +50,10 @@ def qqlogin(request):
             user = User(openid, userinfo['nickname'])
             user.save()
         request.session['mid'] = openid
-        result = __resultToJson(0, '', {})
+        result = __resultToJson('0', '', {})
         return HttpResponse(result, content_type = 'application/json')
     else:
-        result = __resultToJson(2, 'fail to get nickname', {})
+        result = __resultToJson('2', 'fail to get nickname', {})
         return HttpResponse(result, content_type = 'application/json')
 
 @csrf_exempt
@@ -67,7 +70,7 @@ def sinalogin(request):
     if ("uid" in response):
         uid = response['uid']
     else:
-        result = __resultToJson(1, 'fail to get uid', {})
+        result = __resultToJson('1', 'fail to get uid', {})
         return HttpResponse(result, content_type = 'application/json')
 
     #get the userinfo according to the access_token and uid
@@ -80,10 +83,10 @@ def sinalogin(request):
             user = User(uid, userinfo['name'])
             user.save()
         request.session["mid"] = uid
-        result = __resultToJson(0, '', {}) 
+        result = __resultToJson('0', '', {}) 
         return HttpResponse(result, content_type = 'application/json')
     else:
-        result = __resultToJson(2, 'fail to get nickname', {})
+        result = __resultToJson('2', 'fail to get nickname', {})
         return HttpResponse(result, content_type = 'application/json')
         
 @csrf_exempt
@@ -97,7 +100,7 @@ def createStory(request):
     
     #a user cannot create a story before he login
     #if ("mid" not in request.session):
-    #    result = __resultToJson(1, 'redirect to login page!', {})
+    #    result = __resultToJson('1', 'redirect to login page!', {})
     #    return HttpResponse(result, content_type = 'application/json')
 
     #authorId = request.session['mid']
@@ -105,7 +108,7 @@ def createStory(request):
     if User.objects.filter(uid = authorId).exists():
         author = User.objects.get(uid = authorId)
     else:
-        result = __resultToJson(1, "uid: %s does not exist" % authorId, {})
+        result = __resultToJson('1', "uid: %s does not exist" % authorId, {})
         return HttpResponse(result, content_type = 'application/json')
 
     #create start chapter
@@ -118,7 +121,7 @@ def createStory(request):
     try:
         startChap.save()
     except:
-        result = __resultToJson(2, repr(sys.exc_info()[0]), {})
+        result = __resultToJson('2', repr(sys.exc_info()[0]), {})
         return HttpResponse(result, content_type = 'application/json')
     
     #create new story
@@ -134,7 +137,7 @@ def createStory(request):
     try:
         newStory.save()
     except:
-        result = __resultToJson(3, repr(sys.exc_info()[0]), {})
+        result = __resultToJson('3', repr(sys.exc_info()[0]), {})
         return HttpResponse(result, content_type = 'application/json')
 
     #save the storyid for the startChapter
@@ -153,10 +156,10 @@ def createStory(request):
     try:
         coauthorStat.save()
     except:
-        result = __resultToJson(3, repr(sys.exc_info()[0]), {})
+        result = __resultToJson('3', repr(sys.exc_info()[0]), {})
         return HttpResponse(result, content_type = 'application/json')
 
-    result = __resultToJson(0, '', {'stid': newStory.stid})
+    result = __resultToJson('0', '', {'stid': str(newStory.stid)})
     return HttpResponse(result, content_type = 'application/json')
 
 @csrf_exempt
@@ -165,13 +168,13 @@ def createChapter(request):
 
     #a user cannot create a chapter before he login
     #if ('mid' not in request.session):
-    #    result = __resultToJson(1, 'redirect to login page!', {})
+    #    result = __resultToJson('1', 'redirect to login page!', {})
     #    return HttpResponse(result, content_type = 'application/json')
 
     if User.objects.filter(uid = request.POST['coauthor']).exists():
         coauthor = User.objects.get(uid = request.POST['coauthor'])
     else:
-        result = __resultToJson(9, "uid: %s does not exist" % request.POST['coauthor'], {})
+        result = __resultToJson('9', "uid: %s does not exist" % request.POST['coauthor'], {})
         return HttpResponse(result, content_type = 'application/json')
 
     #create a new chapter
@@ -187,27 +190,27 @@ def createChapter(request):
     try:
         newChapter.save()
     except:
-        result = __resultToJson(2, repr(sys.exc_info()[0]), {})
+        result = __resultToJson('2', repr(sys.exc_info()[0]), {})
         return HttpResponse(result, content_type = 'application/json')
     
     #change the belonging story's timestamp
     if Story.objects.filter(stid = newChapter.storyId).exists():
         story = Story.objects.get(stid = newChapter.storyId)
     else:
-        result = __resultToJson(3, "The new chapter's father story: #%s does not exist" % newChapter.storyId, {})
+        result = __resultToJson('3', "The new chapter's father story: #%s does not exist" % newChapter.storyId, {})
         return HttpResponse(result, content_type = 'application/json')
     story.timeStamp = int(time.time())
     try:
         story.save()
     except:
-        result = __resultToJson(4, repr(sys.exc_info()[0]), {})
+        result = __resultToJson('4', repr(sys.exc_info()[0]), {})
         return HttpResponse(result, content_type = 'application/json')
     
     #update the coauthorsStatistics
     if CoauthorsStatistics.objects.filter(story = story).exists():
         coauthorStat = CoauthorsStatistics.objects.get(story = story)
     else:
-        result = __resultToJson(5, "the coauthorStatistics of story :#%d does not exit in db" % story.stid, {})
+        result = __resultToJson('5', "the coauthorStatistics of story :#%d does not exit in db" % story.stid, {})
         return HttpResponse(result, content_type = 'application/json')
     allCoauthorsSet = set(coauthorStat.allCoauthorsSet.split(','))
     weekCoauthorsSet = set(coauthorStat.weekCoauthorsSet.split(','))
@@ -233,7 +236,7 @@ def createChapter(request):
     try:
         coauthorStat.save()
     except:
-        result = __resultToJson(6, repr(sys.exc_info()[0]), {})
+        result = __resultToJson('6', repr(sys.exc_info()[0]), {})
         return HttpResponse(result, content_type = 'application/json')
 
 
@@ -241,7 +244,7 @@ def createChapter(request):
     if Chapter.objects.filter(cpid = int(request.POST['parentId'])).exists():
         parentChapter = Chapter.objects.get(cpid = request.POST['parentId'])
     else:
-        result = __resultToJson(1, "the chapter's parent chapter: #%s does not exist" % request.POST['parentId'], {})
+        result = __resultToJson('1', "the chapter's parent chapter: #%s does not exist" % request.POST['parentId'], {})
         return HttpResponse(result, content_type = 'application/json')
 
     #add new chapter's id into parentChapter's children field
@@ -254,7 +257,7 @@ def createChapter(request):
 
     #return result to client
     detail = {'newcpid': newChapter.cpid, 'brothers': brothers}
-    result = __resultToJson(0, '', detail)
+    result = __resultToJson('0', '', detail)
     return HttpResponse(result, content_type = 'application/json')
 
 @csrf_exempt
@@ -264,7 +267,7 @@ def getStory(request, id):
     if Story.objects.filter(stid = int(id)).exists():
         story = Story.objects.get(stid = int(id))
     else:
-        result = __resultToJson(1, "story: #%s does not exist" % id, {})
+        result = __resultToJson('1', "story: #%s does not exist" % id, {})
         return HttpResponse(result, content_type = 'application/json')
     detail = {
         'title': story.title,
@@ -282,7 +285,7 @@ def getStory(request, id):
         'collectNum': story.collectNum,
         'scanNum': story.scanNum
         }
-    result = __resultToJson(0, '', detail)
+    result = __resultToJson('0', '', detail)
     return HttpResponse(result, content_type = 'application/json')
 
 @csrf_exempt
@@ -292,7 +295,7 @@ def getChapter(request, id):
     if Chapter.objects.filter(cpid = int(id)).exists():
         chapter = Chapter.objects.get(cpid = int(id))
     else:
-        result = __resultToJson(1, "chapter: #%s does not exist" % id, {})
+        result = __resultToJson('1', "chapter: #%s does not exist" % id, {})
         return HttpResponse(result, content_type = 'application/json')
     detail = {
         'desc': chapter.desc,
@@ -306,7 +309,7 @@ def getChapter(request, id):
         'scanNum': chapter.scanNum,
         'storyId': chapter.storyId
         }
-    result = __resultToJson(0, '', detail)
+    result = __resultToJson('0', '', detail)
     return HttpResponse(result, content_type = 'application/json')
 
 @csrf_exempt
@@ -380,7 +383,10 @@ def getStoryList(request, listType, start, count, timeStamp, startStoryId):
                         }
         else:
             curDetail = {'storyid': story.stid, 'modify': 0}
+        for k in curDetail.keys():
+            if not (type(curDetail[k]) == type('str')):
+                curDetail[k] = str(curDetail[k])
         detail['stories'].append(curDetail)
 
-    result = __resultToJson(0, '', detail)
+    result = __resultToJson('0', '', detail)
     return HttpResponse(result, content_type = 'application/json')
