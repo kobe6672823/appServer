@@ -96,11 +96,12 @@ def createStory(request):
     """a method for an existing user to create a new story"""
     
     #a user cannot create a story before he login
-    if ("mid" not in request.session):
-        result = __resultToJson(1, 'redirect to login page!', {})
-        return HttpResponse(result, content_type = 'application/json')
+    #if ("mid" not in request.session):
+    #    result = __resultToJson(1, 'redirect to login page!', {})
+    #    return HttpResponse(result, content_type = 'application/json')
 
-    authorId = request.session['mid']
+    #authorId = request.session['mid']
+    authorId = request.POST['author']
     if User.objects.filter(uid = authorId).exists():
         author = User.objects.get(uid = authorId)
     else:
@@ -163,14 +164,14 @@ def createChapter(request):
     """a method for creating a chapter"""
 
     #a user cannot create a chapter before he login
-    if ('mid' not in request.session):
-        result = __resultToJson(1, 'redirect to login page!', {})
-        return HttpResponse(result, content_type = 'application/json')
+    #if ('mid' not in request.session):
+    #    result = __resultToJson(1, 'redirect to login page!', {})
+    #    return HttpResponse(result, content_type = 'application/json')
 
-    if User.objects.filter(uid = request.session['mid']).exists():
-        coauthor = User.objects.get(uid = request.session['mid'])
+    if User.objects.filter(uid = request.POST['coauthor']).exists():
+        coauthor = User.objects.get(uid = request.POST['coauthor'])
     else:
-        result = __resultToJson(9, "uid: %s does not exist" % request.session['mid'], {})
+        result = __resultToJson(9, "uid: %s does not exist" % request.POST['coauthor'], {})
         return HttpResponse(result, content_type = 'application/json')
 
     #create a new chapter
