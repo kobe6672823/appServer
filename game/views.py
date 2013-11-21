@@ -306,6 +306,8 @@ def getChapter(request, id):
         'unsupport': chapter.unsupport,
         'modeMask': chapter.modeMask,
         'createTime': chapter.createTime,
+        'shareNum': chapter.shareNum,
+        'collectNum': chapter.collectNum,
         'scanNum': chapter.scanNum,
         'storyId': chapter.storyId
         }
