@@ -306,6 +306,8 @@ def getChapter(request, id):
         'unsupport': chapter.unsupport,
         'modeMask': chapter.modeMask,
         'createTime': chapter.createTime,
+        'shareNum': chapter.shareNum,
+        'collectNum': chapter.collectNum,
         'scanNum': chapter.scanNum,
         'storyId': chapter.storyId
         }
@@ -389,4 +391,48 @@ def getStoryList(request, listType, start, count, timeStamp, startStoryId):
         detail['stories'].append(curDetail)
 
     result = __resultToJson('0', '', detail)
+    return HttpResponse(result, content_type = 'application/json')
+
+@csrf_exempt
+def statistics(request):
+    """a method for counting the story's/chapter's sharenum/collectnum/scannum"""
+    
+    type = int(request.POST['type'])
+    storyId = int (request.POST['storyId'])
+    if Story.objects.filter(stid = storyId).exists():
+        story = Story.objects.get(stid = storyId)
+    else:
+        result = __resultToJson('1', "story: #%d does not exist" % storyId, {})
+        return HttpResponse(result, content_type = 'application/json')
+
+    if 'chapterId' in request.POST:
+        chapterId = int (request.POST['chapterId'])
+    else:
+        chapterId = -1
+
+    if chapterId > -1:
+        if Chapter.objects.filter(cpid = chapterId).exists():
+            chapter = Chapter.objects.get(cpid = chapterId)
+        else:
+            result = __resultToJson('1', "chapter: #%d does not exist" % chapterId, {})
+            return HttpResponse(result, content_type = 'application/json')
+
+    if type == 1:   #counting shareNum
+        story.shareNum += 1
+        if chapterId > -1:
+            chapter.shareNum += 1
+    elif type == 2:  #counting collectNum
+        story.collectNum += 1
+        if chapterId > -1:
+            chapter.collectNum += 1
+    elif type == 3:  #counting scanNum
+        story.scanNum += 1
+        if chapterId > -1:
+            chapter.scanNum += 1
+
+    story.save()
+    if chapterId > -1:
+        chapter.save()
+
+    result = __resultToJson('0', '', {})
     return HttpResponse(result, content_type = 'application/json')

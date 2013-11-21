@@ -22,6 +22,8 @@ class Chapter(models.Model):
     unsupport = models.PositiveIntegerField(default = 0, help_text = '踩的人数')
     modeMask = models.IntegerField(help_text = '权限类型的|值.(是否允许其他人进行编辑或续写)')
     createTime = models.BigIntegerField(default = int(time.time()), null = False, help_text = '章节创建时间')
+    shareNum = models.PositiveIntegerField(default = 0, help_text = '分享数')
+    collectNum = models.PositiveIntegerField(default = 0, help_text = '收藏数')
     scanNum = models.PositiveIntegerField(default = 0, help_text = '浏览数')
     storyId = models.BigIntegerField(default = 0, blank = True, null = True, help_text = '所属故事id')
 
