@@ -436,3 +436,27 @@ def statistics(request):
 
     result = __resultToJson('0', '', {})
     return HttpResponse(result, content_type = 'application/json')
+
+@csrf_exempt
+def checkStoryUpdate(request):
+    """a method for checking the storys in the list is updated or not"""
+
+    storyList = request.POST['Ids'].split(',')
+    timeStampList = request.POST['timeStamps'].split(',')
+    returnList = []
+    cnt = 0
+    pos = 0
+    for id in storyList:
+        if Story.objects.filter(stid = int (id)).exists():
+            story = Story.objects.get(stid = int(id))
+            if story.timeStamp > int(timeStampList[pos]):
+                cnt += 1
+                returnList.append(str(story.stid))
+        pos += 1
+    detail = {
+        'count' : cnt,
+        'storyList' : ','.join(returnList),
+    }
+
+    result = __resultToJson('0', '', detail)
+    return HttpResponse(result, content_type = 'application/json')

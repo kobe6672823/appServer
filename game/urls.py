@@ -18,5 +18,6 @@ urlpatterns = patterns('',
     url(r'^chapter/(?P<id>\d+)/offspring/?$', views.getOffspring, name='getOffspring'),
     url(r'^storyList/(?P<listType>\d+)/(?P<start>\d+)/(?P<count>\d+)/(?P<timeStamp>\d+)/(?P<startStoryId>-?\d+)/?$', views.getStoryList, name='getStoryList'),
     url(r'^statistics/?$', views.statistics, name='statistics'),
+    url(r'^update/CheckStoryIsUpdated/?$', views.checkStoryUpdate, name='checkStoryUpdate'),
 )
 
