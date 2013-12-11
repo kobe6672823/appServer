@@ -5,6 +5,8 @@ import requests
 import json
 import sys
 import time
+import logging
+logger = logging.getLogger(__name__)
 
 def __resultToJson(errorCode, errorMsg, detail):
     """a method for dump result into str for httpresponse"""
