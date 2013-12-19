@@ -145,21 +145,6 @@ def createStory(request):
     startChap.storyId = newStory.stid
     startChap.save()
 
-    #create the corresponding coauthorset
-    #coauthorStat = CoauthorsStatistics()
-    #coauthorStat.story = newStory
-    #coauthorStat.allCoauthorsSet = authorId
-    #coauthorStat.allCoauthorsNum = 1
-
-    #coauthorStat.today = authorId
-    #coauthorStat.weekCoauthorsSet = authorId
-    #coauthorStat.weekCoauthorsNum = 1
-    #try:
-    #    coauthorStat.save()
-    #except:
-    #    result = __resultToJson('3', repr(sys.exc_info()[0]), {})
-    #    return HttpResponse(result, content_type = 'application/json')
-
     result = __resultToJson('0', '', {'stid': str(newStory.stid)})
     return HttpResponse(result, content_type = 'application/json')
 
