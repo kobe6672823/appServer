@@ -16,7 +16,7 @@ class Chapter(models.Model):
     desc = models.TextField(help_text = '章节内容')
     parentId = models.PositiveIntegerField(default = 0, help_text = '父亲节点的ID')
     #parentId = models.ForeignKey('self', default = 0, blank=True, null=True, help_text = '父亲节点的ID')
-    children = models.TextField(blank = True, help_text = '用逗号分割开的cpid序列')
+    #children = models.TextField(blank = True, help_text = '用逗号分割开的cpid序列')
     coauthor = models.ForeignKey('User', related_name = 'chapter_author', help_text = '章节作者')
     support = models.PositiveIntegerField(default = 0, help_text = '赞的人数')
     unsupport = models.PositiveIntegerField(default = 0, help_text = '踩的人数')

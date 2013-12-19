@@ -116,7 +116,6 @@ def createStory(request):
     #create start chapter
     startChap = Chapter()
     startChap.desc = request.POST['startChapDesc']
-    startChap.author = author
     startChap.coauthor = author
     startChap.modeMask = request.POST['startChapModeMask']
     startChap.createTime = int(time.time())
@@ -147,19 +146,19 @@ def createStory(request):
     startChap.save()
 
     #create the corresponding coauthorset
-    coauthorStat = CoauthorsStatistics()
-    coauthorStat.story = newStory
-    coauthorStat.allCoauthorsSet = authorId
-    coauthorStat.allCoauthorsNum = 1
+    #coauthorStat = CoauthorsStatistics()
+    #coauthorStat.story = newStory
+    #coauthorStat.allCoauthorsSet = authorId
+    #coauthorStat.allCoauthorsNum = 1
 
-    coauthorStat.today = authorId
-    coauthorStat.weekCoauthorsSet = authorId
-    coauthorStat.weekCoauthorsNum = 1
-    try:
-        coauthorStat.save()
-    except:
-        result = __resultToJson('3', repr(sys.exc_info()[0]), {})
-        return HttpResponse(result, content_type = 'application/json')
+    #coauthorStat.today = authorId
+    #coauthorStat.weekCoauthorsSet = authorId
+    #coauthorStat.weekCoauthorsNum = 1
+    #try:
+    #    coauthorStat.save()
+    #except:
+    #    result = __resultToJson('3', repr(sys.exc_info()[0]), {})
+    #    return HttpResponse(result, content_type = 'application/json')
 
     result = __resultToJson('0', '', {'stid': str(newStory.stid)})
     return HttpResponse(result, content_type = 'application/json')
@@ -179,11 +178,16 @@ def createChapter(request):
         result = __resultToJson('9', "uid: %s does not exist" % request.POST['coauthor'], {})
         return HttpResponse(result, content_type = 'application/json')
 
+    #get the new chapter's brothers
+    brotherChapters = Chapter.objects.filter(parentId = int(request.POST['parentId']))
+    brotherIds = []
+    for chapter in brotherChapters:
+        brotherIds.append(str(chapter.cpid))
+
     #create a new chapter
     newChapter = Chapter()
     newChapter.desc = request.POST['desc']
     newChapter.parentId = int(request.POST['parentId'])
-    newChapter.children = ''    #blank, no children now
     newChapter.coauthor = coauthor
     newChapter.modeMask = int(request.POST['modeMask'])
     newChapter.createTime = int(time.time())
@@ -208,57 +212,8 @@ def createChapter(request):
         result = __resultToJson('4', repr(sys.exc_info()[0]), {})
         return HttpResponse(result, content_type = 'application/json')
     
-    #update the coauthorsStatistics
-    if CoauthorsStatistics.objects.filter(story = story).exists():
-        coauthorStat = CoauthorsStatistics.objects.get(story = story)
-    else:
-        result = __resultToJson('5', "the coauthorStatistics of story :#%d does not exit in db" % story.stid, {})
-        return HttpResponse(result, content_type = 'application/json')
-    allCoauthorsSet = set(coauthorStat.allCoauthorsSet.split(','))
-    weekCoauthorsSet = set(coauthorStat.weekCoauthorsSet.split(','))
-    today = set(coauthorStat.today.split(','))
-
-    if (coauthor.uid not in allCoauthorsSet):
-        allCoauthorsSet.add(coauthor.uid)
-        weekCoauthorsSet.add(coauthor.uid)
-        today.add(coauthor.uid)
-        coauthorStat.allCoauthorsNum += 1
-        coauthorStat.weekCoauthorsNum += 1
-    elif (coauthor.uid not in weekCoauthorsSet):
-        weekCoauthorsSet.add(coauthor.uid)
-        today.add(coauthor.uid)
-        coauthorStat.weekCoauthorsNum += 1
-    elif (coauthor.uid not in today):
-        today.add(coauthor.uid)
-
-    coauthorStat.allCoauthorsSet = ','.join(uid for uid in allCoauthorsSet)
-    coauthorStat.weekCoauthorsSet = ','.join(uid for uid in weekCoauthorsSet)
-    coauthorStat.today = ','.join(uid for uid in today)
-
-    try:
-        coauthorStat.save()
-    except:
-        result = __resultToJson('6', repr(sys.exc_info()[0]), {})
-        return HttpResponse(result, content_type = 'application/json')
-
-
-    #get the parent chapter
-    if Chapter.objects.filter(cpid = int(request.POST['parentId'])).exists():
-        parentChapter = Chapter.objects.get(cpid = request.POST['parentId'])
-    else:
-        result = __resultToJson('1', "the chapter's parent chapter: #%s does not exist" % request.POST['parentId'], {})
-        return HttpResponse(result, content_type = 'application/json')
-
-    #add new chapter's id into parentChapter's children field
-    brothers = parentChapter.children
-    if (parentChapter.children == ''):
-        parentChapter.children = str(newChapter.cpid)
-    else:
-        parentChapter.children = parentChapter.children + ',' + str(newChapter.cpid)
-    parentChapter.save()
-
     #return result to client
-    detail = {'newcpid': newChapter.cpid, 'brothers': brothers}
+    detail = {'newcpid': newChapter.cpid, 'brothers': (',').join(brotherIds)}
     result = __resultToJson('0', '', detail)
     return HttpResponse(result, content_type = 'application/json')
 
@@ -302,7 +257,6 @@ def getChapter(request, id):
     detail = {
         'desc': chapter.desc,
         'parentId': chapter.parentId,
-        'children': chapter.children,
         'coauthor': chapter.coauthor_id,
         'support': chapter.support,
         'unsupport': chapter.unsupport,
