@@ -49,10 +49,10 @@ def qqlogin(request):
     if ("nickname" in userinfo):
         count = User.objects.filter(uid = openid).count()
         if (count == 0):
-            user = User(openid, userinfo['nickname'])
+            user = User(openid, userinfo['nickname'], userinfo['figureurl'])
             user.save()
         request.session['mid'] = openid
-        result = __resultToJson('0', '', {})
+        result = __resultToJson('0', '', {'imageUrl': userinfo['figureurl']})
         return HttpResponse(result, content_type = 'application/json')
     else:
         result = __resultToJson('2', 'fail to get nickname', {})
@@ -82,10 +82,10 @@ def sinalogin(request):
     if ('name' in userinfo):
         count = User.objects.filter(uid = uid).count()
         if (count == 0):
-            user = User(uid, userinfo['name'])
+            user = User(uid, userinfo['name'], userinfo['profile_image_url'])
             user.save()
         request.session["mid"] = uid
-        result = __resultToJson('0', '', {}) 
+        result = __resultToJson('0', '', {'imageUrl': userinfo['profile_image_url']}) 
         return HttpResponse(result, content_type = 'application/json')
     else:
         result = __resultToJson('2', 'fail to get nickname', {})
@@ -101,16 +101,16 @@ def createStory(request):
     """a method for an existing user to create a new story"""
     
     #a user cannot create a story before he login
-    #if ("mid" not in request.session):
-    #    result = __resultToJson('1', 'redirect to login page!', {})
-    #    return HttpResponse(result, content_type = 'application/json')
+    if ("mid" not in request.session):
+        result = __resultToJson('1', 'redirect to login page!', {})
+        return HttpResponse(result, content_type = 'application/json')
 
-    #authorId = request.session['mid']
-    authorId = request.POST['author']
+    authorId = request.session['mid']
+    #authorId = request.POST['author']
     if User.objects.filter(uid = authorId).exists():
         author = User.objects.get(uid = authorId)
     else:
-        result = __resultToJson('1', "uid: %s does not exist" % authorId, {})
+        result = __resultToJson('1', "user doestnot exist", {})
         return HttpResponse(result, content_type = 'application/json')
 
     #create start chapter
@@ -153,14 +153,14 @@ def createChapter(request):
     """a method for creating a chapter"""
 
     #a user cannot create a chapter before he login
-    #if ('mid' not in request.session):
-    #    result = __resultToJson('1', 'redirect to login page!', {})
-    #    return HttpResponse(result, content_type = 'application/json')
+    if ('mid' not in request.session):
+        result = __resultToJson('1', 'redirect to login page!', {})
+        return HttpResponse(result, content_type = 'application/json')
 
-    if User.objects.filter(uid = request.POST['coauthor']).exists():
-        coauthor = User.objects.get(uid = request.POST['coauthor'])
+    if User.objects.filter(uid = request.session['mid']).exists():
+        coauthor = User.objects.get(uid = request.session['mid'])
     else:
-        result = __resultToJson('9', "uid: %s does not exist" % request.POST['coauthor'], {})
+        result = __resultToJson('9', "user does not exist", {})
         return HttpResponse(result, content_type = 'application/json')
 
     #get the new chapter's brothers
