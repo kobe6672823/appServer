@@ -184,13 +184,15 @@ def createChapter(request):
         result = __resultToJson('2', repr(sys.exc_info()[0]), {})
         return HttpResponse(result, content_type = 'application/json')
     
-    #change the belonging story's timestamp
+    #change the belonging story's timestamp and update the 'allCoauthorNum'&'thisWeekCoauthorNum'
     if Story.objects.filter(stid = newChapter.storyId).exists():
         story = Story.objects.get(stid = newChapter.storyId)
     else:
         result = __resultToJson('3', "The new chapter's father story: #%s does not exist" % newChapter.storyId, {})
         return HttpResponse(result, content_type = 'application/json')
     story.timeStamp = int(time.time())
+    story.allCoauthorNum += 1
+    story.weekCoauthorNum += 1
     try:
         story.save()
     except:
@@ -294,12 +296,15 @@ def getStoryList(request, listType, start, count, timeStamp, startStoryId):
         if (startStoryId == -1):
             stories = Story.objects.order_by('-createTime')[start : start+count]
         else:
-            stories = Story.objects.filter(stid__lte = startStoryId).order_by('-createTime')[:count]
+            stories = Story.objects.filter(stid__lt = startStoryId).order_by('-createTime')[:count]
     elif (listType == 2):   #hottest
-        coauthorStats = CoauthorsStatistics.objects.order_by('-weekCoauthorsNum')[start : start+count]
-        storyIds = [obj.story_id for obj in coauthorStats]
-        stories = [Story.objects.get(stid = storyId) for storyId in storyIds]
+    #TODO:need to be changed
+        if (startStoryId == -1):
+            stories = Story.objects.order_by('-weekCoauthorNum')[start : start+count]
+        else:
+            stories = Story.objects.filter(stid__lte = startStoryId).order_by('-weekCoauthorNum')[:count]
     elif (listType == 3):   #quality story
+    #TODO:need to be changed
         coauthorStats = CoauthorsStatistics.objects.order_by('-allCoauthorsNum')[start : start+count]
         storyIds = [obj.story_id for obj in coauthorStats]
         stories = [Story.objects.get(stid = storyId) for storyId in storyIds]
