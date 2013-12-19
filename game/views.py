@@ -1,6 +1,6 @@
 from django.http import HttpResponse
 from django.views.decorators.csrf import csrf_exempt
-from game.models import User, Chapter, Story, CoauthorsStatistics
+from game.models import User, Chapter, Story
 import requests
 import json
 import sys
