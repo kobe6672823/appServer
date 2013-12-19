@@ -7,6 +7,7 @@ import time
 class User(models.Model):
     uid = models.CharField(primary_key = True, max_length = 50, help_text = '识别用户唯一id')
     nickname = models.CharField(max_length = 30, help_text = '用户昵称')
+    imageUrl = models.CharField(max_length = 200, help_text = '用户头像url')
     
     def __unicode__(self):
         return self.uid

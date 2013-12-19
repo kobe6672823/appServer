@@ -49,10 +49,10 @@ def qqlogin(request):
     if ("nickname" in userinfo):
         count = User.objects.filter(uid = openid).count()
         if (count == 0):
-            user = User(openid, userinfo['nickname'])
+            user = User(openid, userinfo['nickname'], userinfo['figureurl'])
             user.save()
         request.session['mid'] = openid
-        result = __resultToJson('0', '', {})
+        result = __resultToJson('0', '', {'imageUrl': userinfo['figureurl']})
         return HttpResponse(result, content_type = 'application/json')
     else:
         result = __resultToJson('2', 'fail to get nickname', {})
@@ -82,10 +82,10 @@ def sinalogin(request):
     if ('name' in userinfo):
         count = User.objects.filter(uid = uid).count()
         if (count == 0):
-            user = User(uid, userinfo['name'])
+            user = User(uid, userinfo['name'], userinfo['profile_image_url'])
             user.save()
         request.session["mid"] = uid
-        result = __resultToJson('0', '', {}) 
+        result = __resultToJson('0', '', {'imageUrl': userinfo['profile_image_url']}) 
         return HttpResponse(result, content_type = 'application/json')
     else:
         result = __resultToJson('2', 'fail to get nickname', {})
