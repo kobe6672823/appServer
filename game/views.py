@@ -285,9 +285,9 @@ def getChildrenChapters(request, id):
     return HttpResponse("getChildrenChapters method, param -> id: %s" % id)
 
 @csrf_exempt
-def getOffspring(request, id):
+def getSubChildren(request, parentId, startId, count):
     #TODO: NEEDED_TO_BE_IMPLEMENTED
-    return HttpResponse("getOffspring method, param -> id: %s" % id)
+    return HttpResponse("getOffspring method, param -> parentId: %s, startId: %s, count: %s" % (parentId,startId,count))
 
 def __getStoryDetails(stories, timeStamp):
     """a method for encapsulating the stories into hash"""
