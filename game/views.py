@@ -14,9 +14,6 @@ def __resultToJson(errorCode, errorMsg, detail):
     result = {}
     result['code'] = errorCode
     result['msg'] = errorMsg
-    for k in detail.keys():
-        if not (type(detail[k]) == type('str')):
-            detail[k] = str(detail[k])
     result['detail'] = detail
     return json.dumps(result)
     return HttpResponse(json.dumps(result), content_type="application/json")
@@ -184,15 +181,13 @@ def createChapter(request):
         result = __resultToJson('2', repr(sys.exc_info()[0]), {})
         return HttpResponse(result, content_type = 'application/json')
     
-    #change the belonging story's timestamp and update the 'allCoauthorNum'&'thisWeekCoauthorNum'
+    #change the belonging story's timestamp
     if Story.objects.filter(stid = newChapter.storyId).exists():
         story = Story.objects.get(stid = newChapter.storyId)
     else:
         result = __resultToJson('3', "The new chapter's father story: #%s does not exist" % newChapter.storyId, {})
         return HttpResponse(result, content_type = 'application/json')
     story.timeStamp = int(time.time())
-    story.allCoauthorNum += 1
-    story.weekCoauthorNum += 1
     try:
         story.save()
     except:
@@ -200,7 +195,7 @@ def createChapter(request):
         return HttpResponse(result, content_type = 'application/json')
     
     #return result to client
-    detail = {'newcpid': newChapter.cpid, 'brothers': (',').join(brotherIds)}
+    detail = {'newcpid': str(newChapter.cpid), 'brothers': (',').join(brotherIds)}
     result = __resultToJson('0', '', detail)
     return HttpResponse(result, content_type = 'application/json')
 
@@ -213,6 +208,8 @@ def getStory(request, id):
     else:
         result = __resultToJson('1', "story: #%s does not exist" % id, {})
         return HttpResponse(result, content_type = 'application/json')
+
+    author = User.objects.get(uid = story.author_id)
     detail = {
         'title': story.title,
         'keysMask': story.keysMask,
@@ -220,7 +217,8 @@ def getStory(request, id):
         'hot': story.hot,
         'support': story.support,
         'unsupport': story.unsupport,
-        'author': story.author_id,
+        'author_nickname': author.nickname,
+        'author_imageUrl': author.imageUrl,
         'startChap': story.startChap_id,
         'modeMask': story.modeMask,
         'createTime': story.createTime,
@@ -229,6 +227,9 @@ def getStory(request, id):
         'collectNum': story.collectNum,
         'scanNum': story.scanNum
         }
+    for k in detail.keys():
+        if not(type(detail[k]) == type(u'ustr') or type(detail[k]) == type('str')): #if the data is not string or unicode_string, should change it into str
+            detail[k] = str(detail[k])
     result = __resultToJson('0', '', detail)
     return HttpResponse(result, content_type = 'application/json')
 
@@ -241,10 +242,12 @@ def getChapter(request, id):
     else:
         result = __resultToJson('1', "chapter: #%s does not exist" % id, {})
         return HttpResponse(result, content_type = 'application/json')
+    coauthor = User.objects.get(uid = chapter.coauthor_id)
     detail = {
         'desc': chapter.desc,
         'parentId': chapter.parentId,
-        'coauthor': chapter.coauthor_id,
+        'author_nickname': coauthor.nickname,
+        'author_imageUrl': coauthor.imageUrl,
         'support': chapter.support,
         'unsupport': chapter.unsupport,
         'modeMask': chapter.modeMask,
@@ -254,6 +257,9 @@ def getChapter(request, id):
         'scanNum': chapter.scanNum,
         'storyId': chapter.storyId
         }
+    for k in detail.keys():
+        if not(type(detail[k]) == type(u'ustr') or type(detail[k]) == type('str')):
+            detail[k] = str(detail[k])
     result = __resultToJson('0', '', detail)
     return HttpResponse(result, content_type = 'application/json')
 
@@ -283,62 +289,79 @@ def getOffspring(request, id):
     #TODO: NEEDED_TO_BE_IMPLEMENTED
     return HttpResponse("getOffspring method, param -> id: %s" % id)
 
-@csrf_exempt
-def getStoryList(request, listType, start, count, timeStamp, startStoryId):
-    """a method for returning the hottest/newest/quality story list"""
-
-    listType = int (listType)
-    start = int(start) - 1
-    count = int(count)
-    timeStamp = int(timeStamp)
-    startStoryId = int(startStoryId)
-    if (listType == 1):  #newest
-        if (startStoryId == -1):
-            stories = Story.objects.order_by('-createTime')[start : start+count]
-        else:
-            stories = Story.objects.filter(stid__lt = startStoryId).order_by('-createTime')[:count]
-    elif (listType == 2):   #hottest
-    #TODO:need to be changed
-        if (startStoryId == -1):
-            stories = Story.objects.order_by('-weekCoauthorNum')[start : start+count]
-        else:
-            stories = Story.objects.filter(stid__lte = startStoryId).order_by('-weekCoauthorNum')[:count]
-    elif (listType == 3):   #quality story
-    #TODO:need to be changed
-        coauthorStats = CoauthorsStatistics.objects.order_by('-allCoauthorsNum')[start : start+count]
-        storyIds = [obj.story_id for obj in coauthorStats]
-        stories = [Story.objects.get(stid = storyId) for storyId in storyIds]
+def __getStoryDetails(stories, timeStamp):
+    """a method for encapsulating the stories into hash"""
 
     detail = {'stories' : []}
     for story in stories:
         if story.timeStamp >= timeStamp:
+            author = User.objects.get(uid = story.author_id)
             curDetail = {
-                        'storyid': story.stid,
-                        'modify': 1,
-                        'title': story.title,
-                        'keysMask': story.keysMask,
-                        'summary': story.summary,
-                        'hot': story.hot,
-                        'support': story.support,
-                        'unsupport': story.unsupport,
-                        'author': story.author_id,
-                        'startChap': story.startChap_id,
-                        'modeMask': story.modeMask,
-                        'createTime': story.createTime,
-                        'timeStamp': story.timeStamp,
-                        'shareNum': story.shareNum,
-                        'collectNum': story.collectNum,
-                        'scanNum': story.scanNum
+                            'storyid': story.stid,
+                            'modify': 1,
+                            'title': story.title,
+                            'keysMask': story.keysMask,
+                            'summary': story.summary,
+                            'hot': story.hot,
+                            'support': story.support,
+                            'unsupport': story.unsupport,
+                            'author_nickname': author.nickname,
+                            'author_imageUrl': author.imageUrl,
+                            'startChap': story.startChap_id,
+                            'modeMask': story.modeMask,
+                            'createTime': story.createTime,
+                            'timeStamp': story.timeStamp,
+                            'shareNum': story.shareNum,
+                            'collectNum': story.collectNum,
+                            'scanNum': story.scanNum
                         }
         else:
             curDetail = {'storyid': story.stid, 'modify': 0}
         for k in curDetail.keys():
-            if not (type(curDetail[k]) == type('str')):
+            if not (type(curDetail[k]) == type(u'ustr') or type(curDetail[k]) == type('str')):
                 curDetail[k] = str(curDetail[k])
         detail['stories'].append(curDetail)
+    return detail
 
+@csrf_exempt
+def newestStoryList(request):
+    """a method for getting the newest story list to the frontend"""
+    
+    startStoryId = int(request.GET['startStoryId'])
+    count = int(request.GET['count'])
+    if startStoryId == -1:  #first newest story request
+        stories = Story.objects.order_by('-createTime')[:count]
+    else:   #follow-up request, use startStoryId to filter the newer story
+        stories = Story.objects.filter(stid__lt = startStoryId).order_by('-createTime')[:count]
+
+    detail = __getStoryDetails(stories, int(request.GET['timeStamp']))
     result = __resultToJson('0', '', detail)
     return HttpResponse(result, content_type = 'application/json')
+
+@csrf_exempt
+def hottestStoryList(request):
+    """a method for getting the hottest story list to the frontend"""
+
+    start = int(request.GET['start'])
+    count = int(request.GET['count'])
+    stories = Story.objects.order_by('-weekCoauthorNum')[start-1 : start-1+count]
+
+    detail = __getStoryDetails(stories, int(request.GET['timeStamp']))
+    result = __resultToJson('0', '', detail)
+    return HttpResponse(result, content_type = 'application/json')
+
+@csrf_exempt
+def qualityStoryList(request):
+    """a method for getting the quality story list"""
+
+    start = int(request.GET['start'])
+    count = int(request.GET['count'])
+    stories = Story.objects.order_by('-allCoauthorNum')[start-1 : start-1+count]
+
+    detail = __getStoryDetails(stories, int(request.GET['timeStamp']))
+    result = __resultToJson('0', '', detail)
+    return HttpResponse(result, content_type = 'application/json')
+
 
 @csrf_exempt
 def statistics(request):
