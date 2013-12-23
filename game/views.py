@@ -281,6 +281,7 @@ def getChildChapter(request, id):
 @csrf_exempt
 def getChildrenChapters(request, id):
     #TODO: NEEDED_TO_BE_IMPLEMENTED
+
     return HttpResponse("getChildrenChapters method, param -> id: %s" % id)
 
 @csrf_exempt
