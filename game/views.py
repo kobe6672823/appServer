@@ -291,6 +291,11 @@ def getSubChildren(request, parentId, startId, count):
     startId = int(request.GET['startId'])
     count = int(request.GET['count'])
     
+    if Chapter.objects.filter(cpid = int(parentId)).exists():
+        chapter = Chapter.objects.get(cpid = int(parentId))
+    else:
+        result = __resultToJson('1', "chapter: #%s does not exist" % parentId, {})
+        return HttpResponse(result, content_type = 'application/json')
     return HttpResponse("getOffspring method, param -> parentId: %s, startId: %s, count: %s" % (parentId,startId,count))
 
 def __getStoryDetails(stories, timeStamp):
