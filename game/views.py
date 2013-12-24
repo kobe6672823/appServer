@@ -287,6 +287,10 @@ def getChildrenChapters(request, id):
 @csrf_exempt
 def getSubChildren(request, parentId, startId, count):
     #TODO: NEEDED_TO_BE_IMPLEMENTED
+    parentId = int(request.GET['parentId'])
+    startId = int(request.GET['startId'])
+    count = int(request.GET['count'])
+    
     return HttpResponse("getOffspring method, param -> parentId: %s, startId: %s, count: %s" % (parentId,startId,count))
 
 def __getStoryDetails(stories, timeStamp):
