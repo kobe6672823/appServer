@@ -263,6 +263,32 @@ def getChapter(request, id):
     result = __resultToJson('0', '', detail)
     return HttpResponse(result, content_type = 'application/json')
 
+def __getChapterDetails(chapters, timeStamp):
+    """a method for encapsulating the stories into hash"""
+
+    detail = {'chapters' : []}
+    for chapter in chapters:
+        author = User.objects.get(uid = chapter.coauthor_id)
+        curDetail = {
+            'desc': chapter.desc,
+            'parentId': chapter.parentId,
+            'author_nickname': author.nickname,
+            'author_imageUrl': author.imageUrl,
+            'support': chapter.support,
+            'unsupport': chapter.unsupport,
+            'modeMask': chapter.modeMask,
+            'createTime': chapter.createTime,
+            'shareNum': chapter.shareNum,
+            'collectNum': chapter.collectNum,
+            'scanNum': chapter.scanNum,
+            'storyId': chapter.storyId
+            }
+        for k in curDetail.keys():
+            if not (type(curDetail[k]) == type(u'ustr') or type(curDetail[k]) == type('str')):
+                curDetail[k] = str(curDetail[k])
+        detail['chapters'].append(curDetail)
+    return detail
+
 @csrf_exempt
 def getNextChapter(request, id):
     #TODO: NEEDED_TO_BE_IMPLEMENTED
@@ -285,18 +311,30 @@ def getChildrenChapters(request, id):
     return HttpResponse("getChildrenChapters method, param -> id: %s" % id)
 
 @csrf_exempt
-def getSubChildren(request, parentId, startId, count):
+def getSubChildren(request):
     #TODO: NEEDED_TO_BE_IMPLEMENTED
-    parentId = int(request.GET['parentId'])
-    startId = int(request.GET['startId'])
-    count = int(request.GET['count'])
+    reqParentId = int(request.GET['parentId'])
+    reqStartId = int(request.GET['startId'])
+    reqCount = int(request.GET['count'])
     
-    if Chapter.objects.filter(cpid = int(parentId)).exists():
-        chapter = Chapter.objects.get(cpid = int(parentId))
+    if reqStartId == -1: #get from first 
+        chapters = Chapter.objects.filter(parentId = reqParentId)[:reqCount]
     else:
-        result = __resultToJson('1', "chapter: #%s does not exist" % parentId, {})
-        return HttpResponse(result, content_type = 'application/json')
-    return HttpResponse("getOffspring method, param -> parentId: %s, startId: %s, count: %s" % (parentId,startId,count))
+        chapters = Chapter.objects.filter(parentId = reqParentId).filter(cpid__gt = reqStartId)[:reqCount]
+
+
+    allNum = Chapter.objects.filter(parentId = reqParentId).count()
+    reqNum = chapters.count()     
+    detail = __getChapterDetails(chapters, 0)
+    
+    detail['reqNum'] = str(reqNum)
+    detail['allNum'] = str(allNum)
+
+    result = __resultToJson('0', '', detail)
+    return HttpResponse(result, content_type = 'application/json')
+    
+    
+    #return HttpResponse("getOffspring method, param -> parentId: %s, startId: %s, count: %s" % (parentId,startId,count))
 
 def __getStoryDetails(stories, timeStamp):
     """a method for encapsulating the stories into hash"""
