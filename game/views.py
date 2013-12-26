@@ -103,12 +103,7 @@ def createStory(request):
         return HttpResponse(result, content_type = 'application/json')
 
     authorId = request.session['mid']
-    #authorId = request.POST['author']
-    if User.objects.filter(uid = authorId).exists():
-        author = User.objects.get(uid = authorId)
-    else:
-        result = __resultToJson('1', "user doestnot exist", {})
-        return HttpResponse(result, content_type = 'application/json')
+    author = User.objects.get(uid = authorId)
 
     #create start chapter
     startChap = Chapter()
@@ -146,11 +141,7 @@ def createChapter(request):
         result = __resultToJson('1', 'redirect to login page!', {})
         return HttpResponse(result, content_type = 'application/json')
 
-    if User.objects.filter(uid = request.session['mid']).exists():
-        coauthor = User.objects.get(uid = request.session['mid'])
-    else:
-        result = __resultToJson('9', "user does not exist", {})
-        return HttpResponse(result, content_type = 'application/json')
+    coauthor = User.objects.get(uid = request.session['mid'])
 
     #get the new chapter's brothers
     brotherChapters = Chapter.objects.filter(parentId = int(request.POST['parentId']))
