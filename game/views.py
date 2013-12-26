@@ -223,6 +223,26 @@ def getStory(request, id):
     return HttpResponse(result, content_type = 'application/json')
 
 @csrf_exempt
+def getCoauthorOfStory(request):
+    """a method for returning the newest coauthor of a story"""
+
+    uidList = []
+    chapters = Chapter.objects.filter(storyId = int(request.GET['storyId'])).order_by('-cpid')
+    for cp in chapters:
+        if cp.coauthor_id not in uidList:
+            uidList.append(cp.coauthor_id)
+            if len(uidList) == int(request.GET['count']):
+                break;
+
+    detail = {'coauthors': []}
+    for id in uidList:
+        user = User.objects.get(uid = id)
+        detail['coauthors'].append({'uid': id, 'imageUrl': user.imageUrl})
+
+    result = __resultToJson('0', '', detail)
+    return HttpResponse(result, content_type = 'application/json')
+
+@csrf_exempt
 def getChapter(request, id):
     """a method for returning details of a chapter according to the chapter id"""
 
