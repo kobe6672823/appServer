@@ -1,3 +1,5 @@
+#!/usr/bin/python
+# -*- coding: utf-8 -*-
 from django.http import HttpResponse
 from django.views.decorators.csrf import csrf_exempt
 from game.models import User, Chapter, Story
@@ -13,7 +15,20 @@ def __resultToJson(errorCode, errorMsg, detail):
 
     result = {}
     result['code'] = errorCode
-    result['msg'] = errorMsg
+    if result['code'] == '1':
+        result['msg'] = u"登录已过期，请重新登录"
+    elif result['code'] == '2':
+        result['msg'] = u"登录失败，请稍后再试"
+    elif result['code'] == '3':
+        result['msg'] = u"未登录，请先登录"
+    elif result['code'] == '4':
+        result['msg'] = u"所属故事不存在，请稍后再试"
+    elif result['code'] == '5':
+        result['msg'] = u"所属章节不存在，请稍后再试"
+    elif result['code'] == '6':
+        result['msg'] = u"此故事不存在，看下别的精彩故事吧"
+    elif result['code'] == '7':
+        result['msg'] = u"此章节不存在，看下别的精彩章节吧"
     result['detail'] = detail
     return json.dumps(result)
     return HttpResponse(json.dumps(result), content_type="application/json")
@@ -28,13 +43,13 @@ def qqlogin(request):
     r = requests.get("https://graph.qq.com/oauth2.0/me", params = payload)
     callback = r.text
     if (callback.find("openid") == -1):
-        result = __resultToJson('1', 'fail to get openid(useless accesstoken)', {})
+        result = __resultToJson('1', '', {})
         return HttpResponse(result, content_type = 'application/json')
 
     try:
         openid = str(callback.split("{")[1].split("}")[0].split(",")[1].split(":")[1].split("\"")[1])
     except:
-       result = __resultToJson('1', 'fail to get openid', {})
+       result = __resultToJson('2', '', {})
        return HttpResponse(result, content_type = 'application/json')
 
     #get the userinfo according to the access_token and openid
@@ -52,7 +67,7 @@ def qqlogin(request):
         result = __resultToJson('0', '', {'imageUrl': userinfo['figureurl']})
         return HttpResponse(result, content_type = 'application/json')
     else:
-        result = __resultToJson('2', 'fail to get nickname', {})
+        result = __resultToJson('2', '', {})
         return HttpResponse(result, content_type = 'application/json')
 
 @csrf_exempt
@@ -69,7 +84,7 @@ def sinalogin(request):
     if ("uid" in response):
         uid = response['uid']
     else:
-        result = __resultToJson('1', 'fail to get uid', {})
+        result = __resultToJson('1', '', {})
         return HttpResponse(result, content_type = 'application/json')
 
     #get the userinfo according to the access_token and uid
@@ -85,7 +100,7 @@ def sinalogin(request):
         result = __resultToJson('0', '', {'imageUrl': userinfo['profile_image_url']}) 
         return HttpResponse(result, content_type = 'application/json')
     else:
-        result = __resultToJson('2', 'fail to get nickname', {})
+        result = __resultToJson('2', '', {})
         return HttpResponse(result, content_type = 'application/json')
         
 @csrf_exempt
@@ -99,7 +114,7 @@ def createStory(request):
     
     #a user cannot create a story before he login
     if ("mid" not in request.session):
-        result = __resultToJson('1', 'redirect to login page!', {})
+        result = __resultToJson('3', '', {})
         return HttpResponse(result, content_type = 'application/json')
 
     authorId = request.session['mid']
@@ -138,7 +153,7 @@ def createChapter(request):
 
     #a user cannot create a chapter before he login
     if ('mid' not in request.session):
-        result = __resultToJson('1', 'redirect to login page!', {})
+        result = __resultToJson('3', '', {})
         return HttpResponse(result, content_type = 'application/json')
 
     coauthor = User.objects.get(uid = request.session['mid'])
@@ -163,7 +178,7 @@ def createChapter(request):
     if Story.objects.filter(stid = newChapter.storyId).exists():
         story = Story.objects.get(stid = newChapter.storyId)
     else:
-        result = __resultToJson('3', "The new chapter's father story: #%s does not exist" % newChapter.storyId, {})
+        result = __resultToJson('4', '', {})
         return HttpResponse(result, content_type = 'application/json')
     story.timeStamp = int(time.time())
     story.save()
@@ -180,7 +195,7 @@ def getStory(request, id):
     if Story.objects.filter(stid = int(id)).exists():
         story = Story.objects.get(stid = int(id))
     else:
-        result = __resultToJson('1', "story: #%s does not exist" % id, {})
+        result = __resultToJson('6', "", {})
         return HttpResponse(result, content_type = 'application/json')
 
     author = User.objects.get(uid = story.author_id)
@@ -214,7 +229,7 @@ def getChapter(request, id):
     if Chapter.objects.filter(cpid = int(id)).exists():
         chapter = Chapter.objects.get(cpid = int(id))
     else:
-        result = __resultToJson('1', "chapter: #%s does not exist" % id, {})
+        result = __resultToJson('7', "", {})
         return HttpResponse(result, content_type = 'application/json')
     coauthor = User.objects.get(uid = chapter.coauthor_id)
     detail = {
@@ -393,7 +408,7 @@ def statistics(request):
     if Story.objects.filter(stid = storyId).exists():
         story = Story.objects.get(stid = storyId)
     else:
-        result = __resultToJson('1', "story: #%d does not exist" % storyId, {})
+        result = __resultToJson('4', "", {})
         return HttpResponse(result, content_type = 'application/json')
 
     if 'chapterId' in request.POST:
@@ -405,7 +420,7 @@ def statistics(request):
         if Chapter.objects.filter(cpid = chapterId).exists():
             chapter = Chapter.objects.get(cpid = chapterId)
         else:
-            result = __resultToJson('1', "chapter: #%d does not exist" % chapterId, {})
+            result = __resultToJson('5', "", {})
             return HttpResponse(result, content_type = 'application/json')
 
     if type == 1:   #counting shareNum
