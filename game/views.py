@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 from django.http import HttpResponse
 from django.views.decorators.csrf import csrf_exempt
-from game.models import User, Chapter, Story
+from game.models import User, Chapter, Story, IOSDeviceToken
 import requests
 import json
 import sys
@@ -465,4 +465,14 @@ def checkStoryUpdate(request):
     }
 
     result = __resultToJson('0', '', detail)
+    return HttpResponse(result, content_type = 'application/json')
+
+@csrf_exempt
+def saveToken(request):
+    """a method for save ios device token to push notification"""
+    
+    if IOSDeviceToken.objects.filter(token = request.POST['deviceToken']).count() == 0:
+        newToken = IOSDeviceToken(request.POST['deviceToken'])
+        newToken.save()
+    result = __resultToJson('0', '', {})
     return HttpResponse(result, content_type = 'application/json')

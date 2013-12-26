@@ -24,5 +24,7 @@ urlpatterns = patterns('',
     #url(r'^chapter/(?P<parentId>\d+)/(?P<startId>\d+)/(?P<count>\d+)/?$', views.getSubChildren, name='getSubChildren'),
     url(r'^statistics/?$', views.statistics, name='statistics'),
     url(r'^update/CheckStoryIsUpdated/?$', views.checkStoryUpdate, name='checkStoryUpdate'),
+
+    url(r'^saveToken/?$', views.saveToken, name='saveToken'),
 )
 
