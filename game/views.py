@@ -116,11 +116,7 @@ def createStory(request):
     startChap.coauthor = author
     startChap.modeMask = request.POST['startChapModeMask']
     startChap.createTime = int(time.time())
-    try:
-        startChap.save()
-    except:
-        result = __resultToJson('2', repr(sys.exc_info()[0]), {})
-        return HttpResponse(result, content_type = 'application/json')
+    startChap.save()
     
     #create new story
     newStory = Story()
@@ -132,12 +128,8 @@ def createStory(request):
     newStory.startChap = startChap
     newStory.createTime = int(time.time())
     newStory.timeStamp = int(time.time())
-    try:
-        newStory.save()
-    except:
-        result = __resultToJson('3', repr(sys.exc_info()[0]), {})
-        return HttpResponse(result, content_type = 'application/json')
-
+    newStory.save()
+    
     #save the storyid for the startChapter
     startChap.storyId = newStory.stid
     startChap.save()
@@ -174,12 +166,7 @@ def createChapter(request):
     newChapter.modeMask = int(request.POST['modeMask'])
     newChapter.createTime = int(time.time())
     newChapter.storyId = int(request.POST['storyId'])
-
-    try:
-        newChapter.save()
-    except:
-        result = __resultToJson('2', repr(sys.exc_info()[0]), {})
-        return HttpResponse(result, content_type = 'application/json')
+    newChapter.save()
     
     #change the belonging story's timestamp
     if Story.objects.filter(stid = newChapter.storyId).exists():
@@ -188,12 +175,8 @@ def createChapter(request):
         result = __resultToJson('3', "The new chapter's father story: #%s does not exist" % newChapter.storyId, {})
         return HttpResponse(result, content_type = 'application/json')
     story.timeStamp = int(time.time())
-    try:
-        story.save()
-    except:
-        result = __resultToJson('4', repr(sys.exc_info()[0]), {})
-        return HttpResponse(result, content_type = 'application/json')
-    
+    story.save()
+        
     #return result to client
     detail = {'newcpid': str(newChapter.cpid), 'brothers': (',').join(brotherIds)}
     result = __resultToJson('0', '', detail)
