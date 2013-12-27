@@ -64,7 +64,7 @@ def qqlogin(request):
             user = User(openid, userinfo['nickname'], userinfo['figureurl'])
             user.save()
         request.session['mid'] = openid
-        result = __resultToJson('0', '', {'imageUrl': userinfo['figureurl']})
+        result = __resultToJson('0', '', {'uid':openid, 'nickname': userinfo['nickname'], 'imageUrl': userinfo['figureurl']})
         return HttpResponse(result, content_type = 'application/json')
     else:
         result = __resultToJson('2', '', {})
@@ -82,7 +82,7 @@ def sinalogin(request):
     r = requests.get('https://api.weibo.com/2/account/get_uid.json', params = payload)
     response = r.json()
     if ("uid" in response):
-        uid = response['uid']
+        uid = str(response['uid'])
     else:
         result = __resultToJson('1', '', {})
         return HttpResponse(result, content_type = 'application/json')
@@ -97,7 +97,7 @@ def sinalogin(request):
             user = User(uid, userinfo['name'], userinfo['profile_image_url'])
             user.save()
         request.session["mid"] = uid
-        result = __resultToJson('0', '', {'imageUrl': userinfo['profile_image_url']}) 
+        result = __resultToJson('0', '', {'uid': uid, 'nickname': userinfo['name'], 'imageUrl': userinfo['profile_image_url']}) 
         return HttpResponse(result, content_type = 'application/json')
     else:
         result = __resultToJson('2', '', {})
