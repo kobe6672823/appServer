@@ -488,6 +488,80 @@ def checkStoryUpdate(request):
     return HttpResponse(result, content_type = 'application/json')
 
 @csrf_exempt
+def checkStoryListUpdate(request):
+    """根据前端发送过来的时间戳查看故事id列表中的有哪些是有更新的"""
+
+    storyIds = request.GET['storyIds'].split(',')
+    requestTimeStamp = int(request.GET['timeStamp'])
+    result = []
+    for id in storyIds:
+        story = Story.objects.get(stid = int(id))
+        if story.timeStamp > requestTimeStamp:
+            result.append(id)
+
+    detail = {
+        'timeStamp': str(int(time.time())),
+        'storyIds': (',').join(result),
+        }
+
+    result = __resultToJson('0', '', detail)
+    return HttpResponse(result, content_type = 'application/json')
+
+@csrf_exempt
+def checkAsCoauthorUpdate(request):
+    """查看用户所参与的故事是否有更新，返回有更新的故事id列表"""
+
+    #需要登录才能获取用户id
+    if ('mid' not in request.session):
+        result = __resultToJson('3', '', {})
+        return HttpResponse(result, content_type = 'application/json')
+
+    requestTimeStamp = int(request.GET['timeStamp'])
+    uid = request.session['mid']
+
+    chapters = Chapter.objects.filter(coauthor_id = uid)
+    results = []
+    for cp in chapters:
+        if Story.objects.filter(stid = cp.storyId).filter(timeStamp__gt = requestTimeStamp).exists():
+            results.append(cp.storyId)
+
+    results = list(set(results))
+    results.sort(reverse = True)
+    results = [str(id) for id in results]
+    detail = {
+        'timeStamp': str(int(time.time())),
+        'storyIds': (',').join(results),
+        }
+
+    result = __resultToJson('0', '', detail)
+    return HttpResponse(result, content_type = 'application/json')
+
+@csrf_exempt
+def checkAsAuthorUpdate(request):
+    """查看用户创建的故事是否有更新，返回有更新的故事id列表"""
+
+    #需要登录才能获取用户id
+    if ('mid' not in request.session):
+        result = __resultToJson('3', '', {})
+        return HttpResponse(result, content_type = 'application/json')
+
+    requestTimeStamp = int(request.GET['timeStamp'])
+    uid = request.session['mid']
+
+    stories = Story.objects.filter(author_id = uid).filter(timeStamp__gt = requestTimeStamp).order_by('-timeStamp')
+    results = []
+    for story in stories:
+        results.append(str(story.stid))
+
+    detail = {
+        'timeStamp': str(int(time.time())),
+        'storyIds': (',').join(results),
+        }
+
+    result = __resultToJson('0', '', detail)
+    return HttpResponse(result, content_type = 'application/json')
+
+@csrf_exempt
 def saveToken(request):
     """a method for save ios device token to push notification"""
     
