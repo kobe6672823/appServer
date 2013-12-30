@@ -206,6 +206,7 @@ def getStory(request, id):
         'hot': story.hot,
         'support': story.support,
         'unsupport': story.unsupport,
+        'author_uid': author.uid,
         'author_nickname': author.nickname,
         'author_imageUrl': author.imageUrl,
         'startChap': story.startChap_id,
@@ -214,7 +215,8 @@ def getStory(request, id):
         'timeStamp': story.timeStamp,
         'shareNum': story.shareNum,
         'collectNum': story.collectNum,
-        'scanNum': story.scanNum
+        'scanNum': story.scanNum,
+        'chapterNum': Chapter.objects.filter(storyId = story.stid).count()
         }
     for k in detail.keys():
         if not(type(detail[k]) == type(u'ustr') or type(detail[k]) == type('str')): #if the data is not string or unicode_string, should change it into str
@@ -348,7 +350,7 @@ def getSubChildren(request):
 def __getStoryDetails(stories, timeStamp):
     """a method for encapsulating the stories into hash"""
 
-    detail = {'stories' : []}
+    detail = {'stories' : [], 'timeStamp': str(int(time.time()))}
     for story in stories:
         if story.timeStamp >= timeStamp:
             author = User.objects.get(uid = story.author_id)
@@ -361,6 +363,7 @@ def __getStoryDetails(stories, timeStamp):
                             'hot': story.hot,
                             'support': story.support,
                             'unsupport': story.unsupport,
+                            'author_uid': author.uid,
                             'author_nickname': author.nickname,
                             'author_imageUrl': author.imageUrl,
                             'startChap': story.startChap_id,
@@ -369,7 +372,8 @@ def __getStoryDetails(stories, timeStamp):
                             'timeStamp': story.timeStamp,
                             'shareNum': story.shareNum,
                             'collectNum': story.collectNum,
-                            'scanNum': story.scanNum
+                            'scanNum': story.scanNum,
+                            'chapterNum': Chapter.objects.filter(storyId = story.stid).count(),
                         }
         else:
             curDetail = {'storyid': story.stid, 'modify': 0}
